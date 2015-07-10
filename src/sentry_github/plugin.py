@@ -97,15 +97,26 @@ class GitHubPlugin(IssuePlugin):
           # ]
         }
         json_resp = self.github_request(request, url, json=json_data)
-        return json_resp['number']
+        issue_id = json_resp['number']
+        assignee = form_data['assignee']
+        if assignee:
+            return '%s:%s' % (issue_id, assignee)
+        else:
+            return issue_id
 
     def get_issue_label(self, group, issue_id, **kwargs):
-        return mark_safe('<i class="fa fa-github"></i> GH-%s' % issue_id)
+        issue_id, assignee = self.extract_assignee(issue_id)
+        issue_html = '<i class="fa fa-github"></i> GH-%s' % issue_id
+        if assignee:
+            assignee_html = ' assigned to @%s' % assignee
+        else:
+            assignee_html = ''
+        return mark_safe('%s%s' % (issue_html, assignee_html))
 
     def get_issue_url(self, group, issue_id, **kwargs):
         # XXX: get_option may need tweaked in Sentry so that it can be pre-fetched in bulk
         repo = self.get_option('repo', group.project)
-
+        issue_id, assignee = self.extract_assignee(issue_id)
         return 'https://github.com/%s/issues/%s' % (repo, issue_id)
 
     def github_request(self, request, url, **kwargs):
@@ -136,3 +147,13 @@ class GitHubPlugin(IssuePlugin):
             raise forms.ValidationError(json_resp['message'])
 
         return json_resp
+
+    def extract_assignee(self, issue_id):
+        """
+        Split issue id to pair (issue_id, assignee). If there's no assignee,
+        return (issue_id, None)
+        """
+        issue_id = issue_id or ''
+        if ':' in issue_id:
+            return issue_id.split(':', 1)
+        return issue_id, None
