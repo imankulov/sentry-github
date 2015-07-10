@@ -10,6 +10,7 @@ from django import forms
 from django.core.cache import cache
 from django.utils.translation import ugettext_lazy as _
 from sentry.plugins.bases.issue import IssuePlugin, NewIssueForm
+from django.utils.safestring import mark_safe
 from sentry.http import safe_urlopen, safe_urlread
 from sentry.utils import json
 
@@ -99,7 +100,7 @@ class GitHubPlugin(IssuePlugin):
         return json_resp['number']
 
     def get_issue_label(self, group, issue_id, **kwargs):
-        return 'GH-%s' % issue_id
+        return mark_safe('<i class="fa fa-github"></i> GH-%s' % issue_id)
 
     def get_issue_url(self, group, issue_id, **kwargs):
         # XXX: get_option may need tweaked in Sentry so that it can be pre-fetched in bulk
